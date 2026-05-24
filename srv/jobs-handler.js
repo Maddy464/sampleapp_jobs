@@ -39,6 +39,10 @@ module.exports = (app) => {
   const express = require('express');
   app.use(express.json());
 
+  let x=10;
+  let y=20;
+  
+
   // Read all Books — lets you verify DB state using the same job scheduler token
   app.get('/jobs/books', jwtAuth, async (req, res) => {
     try {
