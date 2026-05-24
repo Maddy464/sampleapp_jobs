@@ -277,7 +277,108 @@ Run recorded under the schedule
 
 ---
 
-## 7. Quick Reference — REST Commands
+## 7. Git Branch Management — Best Practices
+
+### Current Repo State
+
+```
+github.com/Maddy464/sampleapp_jobs
+  └── main (only branch) ← all changes go directly to production BTP
+```
+
+### Why Branch Matters for This App
+
+The Job Scheduler is **live and running** in BTP. Any broken change pushed directly to `main` causes real scheduled job failures with no stable version to roll back to.
+
+### Recommended Strategy
+
+```
+main          ← always stable, always matches deployed BTP state
+  └── feature/add-cron-retry       ← active development
+  └── feature/job-dashboard-api    ← parallel feature
+  └── fix/hana-update-performance  ← bug fix
+```
+
+Minimum for solo work: `main` + one `feature/` branch at a time.
+
+### Full Workflow: Branch → Change → Merge → Deploy
+
+```sh
+# 1. Create branch — main stays untouched
+git checkout -b feature/my-changes
+
+# 2. Make changes and commit
+git add srv/jobs-handler.js mta.yaml
+git commit -m "Add retry logic for syncBooks job"
+git push origin feature/my-changes
+
+# 3a. Merge via GitHub PR (recommended for mta.yaml / jobs-handler.js changes)
+#     → github.com/Maddy464/sampleapp_jobs
+#     → "Compare & pull request" → review diff → "Merge pull request"
+git checkout main && git pull origin main
+
+# 3b. OR merge directly via CLI (simple day-to-day changes)
+git checkout main
+git pull origin main
+git merge feature/my-changes
+git push origin main
+
+# 4. Verify on BTP BEFORE deleting branch
+npm run build && npm run deploy
+
+# 5. Clean up after confirming deploy is healthy
+git branch -d feature/my-changes            # delete local
+git push origin --delete feature/my-changes # delete remote
+```
+
+### Post-Merge Checklist
+
+```
+[ ] PR merged / CLI merge completed
+[ ] git pull on local main
+[ ] npm run build && npm run deploy — app started successfully
+[ ] Job Scheduler run history shows COMPLETED after deploy
+[ ] Delete local branch:  git branch -d feature/<name>
+[ ] Delete remote branch: git push origin --delete feature/<name>
+[ ] Close related GitHub issue (if any)
+```
+
+### Delete or Keep the Branch?
+
+**Always delete after merge.** The commits are permanently in `main`'s history — the branch pointer is just a label and adds noise once merged.
+
+| Branch type | Action after merge |
+|---|---|
+| `feature/*` | **Delete** |
+| `fix/*` | **Delete** |
+| `docs/*` | **Delete** |
+| `main` | Keep forever |
+
+> **GitHub tip**: Enable auto-delete under **Repo → Settings → General → Pull Requests → Automatically delete head branches**. Removes the manual step after every PR merge.
+
+### When to Use PR vs Direct CLI Merge
+
+| Situation | Use |
+|---|---|
+| Touching `mta.yaml` or `jobs-handler.js` | GitHub PR — review diff before it hits production |
+| Simple doc or config change | CLI merge — faster |
+| Team working on the repo | Always GitHub PR |
+| Solo, low-risk change | CLI merge |
+
+### Conflict Resolution (if main moved ahead)
+
+```sh
+git checkout feature/my-changes
+git rebase main           # replay your commits on top of latest main
+# fix any conflicts → git add <file> → git rebase --continue
+git checkout main
+git merge feature/my-changes
+git push origin main
+```
+
+---
+
+## 8. Quick Reference — REST Commands
 
 > Use **single quotes** around credentials — `$` and `|` break with double quotes.
 
