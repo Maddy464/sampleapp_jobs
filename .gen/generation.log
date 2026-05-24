@@ -1,0 +1,37 @@
+Starting CAP Project Generator...
+Using @sap/cds-dk [9.9.1] from /extbin/globals/bun/global/install/node_modules/@sap/cds-dk
+Using @sap/generator-cap-project [2.0.6] from [/extbin/globals/bun/global/install/node_modules/@sap/generator-cap-project]
+Using root path [/home/user/projects]
+
+Creating project with hana, html5-repo, mta, nodejs, tiny-sample, xsuaa
+
+Adding facet: nodejs
+Adding facet: mta
+Adding facet: tiny-sample
+Adding facet: xsuaa
+Adding facet: hana
+Adding facet: html5-repo
+
+Successfully initialized CAP project
+Continue with: code sampleapp 
+
+
+Installing dependencies...
+
+added 258 packages, and audited 259 packages in 3s
+
+39 packages are looking for funding
+  run `npm fund` for details
+
+2 moderate severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+
+Finished installing dependencies
+
+Done setting up project sampleapp
+Project is ready to use
+

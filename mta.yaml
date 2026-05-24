@@ -1,0 +1,151 @@
+_schema-version: 3.3.0
+ID: sampleapp
+description: A simple CAP project.
+version: 1.0.0
+modules:
+- name: sampleapp-srv
+  type: nodejs
+  path: gen/srv
+  requires:
+  - name: sampleapp-auth
+  - name: sampleapp-db
+  - name: jobschedule
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  parameters:
+    buildpack: nodejs_buildpack
+    instances: 1
+  build-parameters:
+    builder: npm-ci
+- name: sampleapp-db-deployer
+  type: hdb
+  path: gen/db
+  requires:
+  - name: sampleapp-db
+  parameters:
+    buildpack: nodejs_buildpack
+- name: sampleapp-app-deployer
+  type: com.sap.application.content
+  path: gen
+  requires:
+  - name: sampleapp-auth
+  - name: srv-api
+  - name: sampleapp-html5-repo-host
+    parameters:
+      config:
+        HTML5Runtime_enabled: true
+      content-target: true
+  build-parameters:
+    build-result: app/
+    requires:
+    - artifacts:
+      - comdemosamplesampleui.zip
+      name: comdemosamplesampleui
+      target-path: app/
+- name: sampleapp-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: sampleapp-destination-service
+    parameters:
+      content-target: true
+  - name: sampleapp-html5-repo-host
+    parameters:
+      service-key:
+        name: sampleapp-html5-repo-host-key
+  - name: sampleapp-auth
+    parameters:
+      service-key:
+        name: sampleapp-auth-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: sample_sampleapp_html5_repo_host
+          ServiceInstanceName: sampleapp-html5-repo-host
+          ServiceKeyName: sampleapp-html5-repo-host-key
+          sap.cloud.service: sample
+        - Authentication: OAuth2UserTokenExchange
+          Name: sample_sampleapp_auth
+          ServiceInstanceName: sampleapp-auth
+          ServiceKeyName: sampleapp-auth-key
+          sap.cloud.service: sample
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: comdemosamplesampleui
+  type: html5
+  path: app/sample_ui
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+resources:
+- name: jobschedule
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: jobscheduler
+    service-plan: free
+- name: sampleapp-auth
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      oauth2-configuration:
+        credential-types:
+        - binding-secret
+        - x509
+      tenant-mode: dedicated
+      xsappname: sampleapp-${org}-${space}
+    path: ./xs-security.json
+    service: xsuaa
+    service-plan: application
+- name: sampleapp-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+- name: sampleapp-html5-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-host
+- name: sampleapp-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      init_data:
+        instance:
+          destinations:
+          - Authentication: NoAuthentication
+            Name: ui5
+            ProxyType: Internet
+            Type: HTTP
+            URL: https://ui5.sap.com
+          - Authentication: NoAuthentication
+            HTML5.DynamicDestination: true
+            HTML5.ForwardAuthToken: true
+            Name: srv-api
+            ProxyType: Internet
+            Type: HTTP
+            URL: ~{srv-api/srv-url}
+          existing_destinations_policy: update
+      version: 1.0.0
+    service: destination
+    service-name: sampleapp-destination-service
+    service-plan: lite
+  requires:
+  - name: srv-api
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm ci
+    - npx cds build --production

@@ -1,0 +1,16 @@
+{
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.jobscheduler",
+      "description": "Scope for BTP Job Scheduling Service to call job endpoints"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "JobSchedulerRole",
+      "description": "Allows Job Scheduler to invoke scheduled jobs",
+      "scope-references": ["$XSAPPNAME.jobscheduler"]
+    }
+  ],
+  "attributes": []
+}
