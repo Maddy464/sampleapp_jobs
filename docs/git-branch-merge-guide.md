@@ -172,14 +172,105 @@ git push origin main
 
 ---
 
+## `git add -A` vs `git add <filename>`
+
+### `git add docs/filename` — Specific file
+
+Stages **only that exact file**. Everything else remains unstaged.
+
+```sh
+git add docs/git-branch-merge-guide.md
+
+# Result:
+Changes to be committed:
+  modified: docs/git-branch-merge-guide.md   ← only this
+
+Changes not staged:
+  modified: srv/jobs-handler.js               ← still unstaged
+  modified: mta.yaml                          ← still unstaged
+```
+
+---
+
+### `git add -A` — Everything everywhere
+
+Stages **all** changes across the entire repo — modified, new, and deleted files.
+
+```sh
+git add -A
+
+# Result:
+Changes to be committed:
+  modified: docs/git-branch-merge-guide.md   ← included
+  modified: srv/jobs-handler.js              ← included
+  modified: mta.yaml                         ← included
+  new file: docs/job-scheduling-analysis.md  ← included
+  deleted:  old-file.js                      ← included
+```
+
+---
+
+### Side-by-side Comparison
+
+| | `git add -A` | `git add <filename>` |
+|---|---|---|
+| Scope | Entire repo | One specific file |
+| New files | Yes | Only if specified |
+| Deleted files | Yes | Only if specified |
+| Other modified files | Yes | No |
+| Control | Low | High |
+| Risk | Can accidentally stage secrets, binaries | Safe — you know exactly what's staged |
+
+---
+
+### Why Specific Files Are Safer for This App
+
+`git add -A` can accidentally stage:
+
+```sh
+mta_archives/archive.mtar    ← 8MB binary build artifact
+gen/                         ← generated build output
+.env                         ← credentials if you create one
+```
+
+The `.gitignore` protects against most of these, but explicit staging is always safer.
+
+---
+
+### Other Useful Variants
+
+```sh
+git add docs/              # stage everything inside docs/ folder
+git add srv/               # stage everything inside srv/ folder
+git add *.yaml             # stage all yaml files
+git add -p                 # interactive — choose which chunks to stage
+```
+
+---
+
+### Rule of Thumb
+
+| Situation | Command |
+|---|---|
+| Focused commit, specific change | `git add <file>` — preferred |
+| Quick personal commit, .gitignore is solid | `git add -A` — acceptable |
+| Team / production repo | Never use `git add -A` — too risky |
+
+For this app — since `mta_archives/` and `gen/` contain build outputs — always use specific file names or folder paths.
+
+---
+
 ## Quick Reference
 
 ```sh
-git checkout -b feature/<name>          # create new branch
-git push origin feature/<name>          # push to GitHub
-git checkout main && git pull           # switch to main and sync
-git merge feature/<name>               # merge into main
-git push origin main                    # push merged main
-git branch -d feature/<name>           # delete local branch
-git push origin --delete feature/<name> # delete remote branch
+git checkout -b feature/<name>           # create new branch
+git push origin feature/<name>           # push to GitHub
+git checkout main && git pull            # switch to main and sync
+git add <specific-file>                  # stage specific file (preferred)
+git add docs/                            # stage entire folder
+git add -A                               # stage everything (use carefully)
+git merge feature/<name>                 # merge into main
+git push origin main                     # push merged main
+git branch -d feature/<name>            # delete local branch
+git push origin --delete feature/<name>  # delete remote branch
 ```
